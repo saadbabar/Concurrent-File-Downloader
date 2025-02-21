@@ -74,6 +74,7 @@ void Downloader::concurrent_download() {
     std::cout << "Combining chunks into output file..." << std::endl;
     combine_chunks();
     auto end_time = std::chrono::high_resolution_clock::now();
+    delete_directory(this->temp_dir);
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time);
     std::cout << "Download took " << duration.count() << " milliseconds." << std::endl;
 }
@@ -204,4 +205,11 @@ void Downloader::combine_chunks() {
     }
     output.close();
     std::cout << "File downloaded successfully: " << this->output_file << std::endl;
+}
+
+void Downloader::delete_directory(std::string& dir_name) {
+    if (std::filesystem::exists(dir_name)) {
+        std::filesystem::remove_all(dir_name);
+        std::cout << "Deleted Temporary Directory: " << this->temp_dir << std::endl;
+    }
 }
