@@ -11,7 +11,8 @@ int main(int argc, char *argv[]) {
 
     unsigned int num_threads = 1; // default num threads used = 1
     char *url = NULL;
-    char *output_file = NULL;
+    // char *output_file = NULL;
+    std::string output_file;
     int opt;
 
     if (argc != 3 && argc != 5) {
@@ -55,10 +56,14 @@ int main(int argc, char *argv[]) {
     output_file = argv[optind + 1];
 
     printf("URL: %s\n", url);
-    printf("Output File: %s\n", output_file);
+    change_output_format(url, output_file);
+    printf("Output File: %s\n", output_file.c_str());
     printf("Number of Threads: %d\n", num_threads);
 
+    unsigned long NUM_BYTES = get_file_size(url);
+
     concurrent_download(url, num_threads);
+    divide_bytes_by_thread(NUM_BYTES, num_threads);
 
     return 0;
 
