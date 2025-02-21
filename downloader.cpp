@@ -1,11 +1,19 @@
 #include "downloader.h"
 #include <curl/curl.h>
 #include <iostream>
+#include <filesystem>
+#include <thread>
+#include <fstream>
+#include <mutex>
+#include <chrono> // to include how long download took
 
 
 Downloader::Downloader(const std::string& url, std::string& output_file, unsigned int num_threads)
     : url(url), output_file(output_file), num_threads(num_threads) {
         std::cout << "Downloading " << url << " into " << output_file << " with " << num_threads << " threads..." << std::endl;
+
+        this->temp_dir = "temp_chunks";
+        std::filesystem::create_directory(temp_dir);
     };
 
 unsigned long Downloader::get_file_size() {
@@ -46,7 +54,28 @@ void Downloader::concurrent_download() {
     }
 
     std::cout << "Downloading " << file_size << " bytes using " << this->num_threads << " threads..." << std::endl;
+    auto start_time = std::chrono::high_resolution_clock::now();
 
+    std::vector<std::pair<unsigned long, unsigned long> > chunks = divide_bytes_by_thread();
+
+    // make a vector for the amount of threads you need
+    std::vector<std::thread> threads;
+
+    for (unsigned int i = 0; i < this->num_threads; i++) {
+        threads.emplace_back(&Downloader::download_chunk, this, chunks[i].first, chunks[i].second, i);
+    }
+
+    for (auto& thread: threads) {
+        thread.join();
+    }
+
+    std::cout << "All chunks downloaded!" << std::endl;
+
+    std::cout << "Combining chunks into output file..." << std::endl;
+    combine_chunks();
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time);
+    std::cout << "Download took " << duration.count() << " milliseconds." << std::endl;
 }
 
 std::vector<std::pair<unsigned long, unsigned long> > Downloader::divide_bytes_by_thread() {
@@ -121,7 +150,7 @@ void Downloader::download_chunk(unsigned long start, unsigned long end, int thre
     }
 
     // Create temporatu file to store data in
-    std::string chunk_file = output_file + "_chunk_" + std::to_string(thread_id) + ".tmp";
+    std::string chunk_file = this->temp_dir + "/chunk_" + std::to_string(thread_id);
     FILE* file = fopen(chunk_file.c_str(), "wb"); // open chunk file that we created with write permissions
 
     if (!file) {
@@ -140,10 +169,39 @@ void Downloader::download_chunk(unsigned long start, unsigned long end, int thre
     fclose(file);
     curl_easy_cleanup(curl);
 
+    std::lock_guard<std::mutex> lock(mtx);
     if (res != CURLE_OK) {
         std::cerr << "Thread " << thread_id << " failed to download chunk: " << curl_easy_strerror(res) << std::endl;
     }
     else {
         std::cout << "Thread " << thread_id << " downloaded bytes " << start << " to " << end << std::endl;
     }
+}
+
+void Downloader::combine_chunks() {
+    std::ofstream output(this->output_file, std::ios::binary);
+
+    if (!output) {
+        std::cerr << "Failed to open output file: " << this->output_file << std::endl;
+        return; 
+    }
+
+    for(unsigned int i = 0; i < this->num_threads; i++) {
+        std::string chunk_file = this->temp_dir + "/chunk_" + std::to_string(i);
+        std::ifstream chunk(chunk_file, std::ios::binary);
+
+        if (!chunk) {
+            std::cerr << "Failed to open chunk file: " << chunk_file << std::endl;
+            continue;
+        }
+
+        // Appending the chunk to the output file
+        output << chunk.rdbuf();
+        chunk.close();
+
+        // CLean up: get rid of the chunk
+        std::remove(chunk_file.c_str());
+    }
+    output.close();
+    std::cout << "File downloaded successfully: " << this->output_file << std::endl;
 }

@@ -67,8 +67,8 @@ int main(int argc, char *argv[]) {
 
     Downloader downloader(url, output_file, num_threads);
     downloader.change_output_format();
-    downloader.concurrent_download();
     downloader.divide_bytes_by_thread();
+    downloader.concurrent_download();
 
     return 0;
 

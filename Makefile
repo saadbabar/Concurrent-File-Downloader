@@ -4,7 +4,9 @@ SOURCES = main.cpp downloader.cpp # source code files
 
 CXX = g++ # compiler i am using
 
-CXXFLAGS = -Wall -g # flags
+VERSION = -std=c++17
+
+CXXFLAGS = -Wall -g $(VERSION)# flags
 
 OBJECTS = $(SOURCES:.cpp=.o) # for every source file make an object
 

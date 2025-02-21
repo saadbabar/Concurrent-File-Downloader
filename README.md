@@ -44,3 +44,8 @@ The program takes in one optional argument and two positional arguments:
 
 ### **Docker**  
 - Containerize the application for cross-platform compatibility after the initial coding is complete.  
+
+
+## Metrics
+- When given a 1.7GB video in a controlled environment (same WiFi, network speeds), this programw as able to utilize 8 threads on my M1 Macbook Air and download the video in 1 minute, 4 seconds. When Chrome's download manager was given the same video, it took 3 minutes and 23 seconds. Overall **1.95x** speed performance boost.
+[!My Local Image](metric1.png)
