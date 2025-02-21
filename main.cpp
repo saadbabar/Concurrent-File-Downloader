@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <thread>
+#include "downloader.h"
 
 
 int main(int argc, char *argv[]) {
@@ -56,6 +57,8 @@ int main(int argc, char *argv[]) {
     printf("URL: %s\n", url);
     printf("Output File: %s\n", output_file);
     printf("Number of Threads: %d\n", num_threads);
+
+    concurrent_download(url, num_threads);
 
     return 0;
 
