@@ -10,4 +10,10 @@
 # Ignore VScode files
 *.vscode
 
+*.pdf
+*.mp3
+*.mp4
+*.JPEG
+*.html
+
 

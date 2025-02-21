@@ -49,3 +49,13 @@ The program takes in one optional argument and two positional arguments:
 ## Metrics
 - When given a 1.7GB video in a controlled environment (same WiFi, network speeds), this programw as able to utilize 8 threads on my M1 Macbook Air and download the video in 1 minute, 4 seconds. When Chrome's download manager was given the same video, it took 3 minutes and 23 seconds. Overall **1.95x** speed performance boost.
 [!My Local Image](metric1.png)
+
+## Run the docker image
+- On you local machine in, in the root directory of the project run:
+```bash
+docker build -t file-downloader .   
+```
+
+- Then run: 
+```bash
+docker run -it file-downloader``` [-t <num_threads>] <url> <output_file>

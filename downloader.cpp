@@ -5,6 +5,8 @@
 #include <thread>
 #include <fstream>
 #include <mutex>
+#include <vector>
+#include <algorithm>
 #include <chrono> // to include how long download took
 
 
