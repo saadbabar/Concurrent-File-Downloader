@@ -46,21 +46,37 @@ void Downloader::concurrent_download() {
     }
 
     std::cout << "Downloading " << file_size << " bytes using " << this->num_threads << " threads..." << std::endl;
+
 }
 
-void Downloader::divide_bytes_by_thread() {
+std::vector<std::pair<unsigned long, unsigned long> > Downloader::divide_bytes_by_thread() {
     // divide which thread gets how many bytes
+
+    std::vector<std::pair<unsigned long, unsigned long> > chunks;
+    chunks.resize(this->num_threads);
+
     const unsigned long file_size = get_file_size();
-    unsigned long base_size = file_size/this->num_threads;
+
+
+    unsigned long chunk_size = file_size/this->num_threads;
     unsigned long remainder = file_size % this->num_threads;
+    unsigned long start = 0;
 
     for (unsigned int i = 0; i < num_threads; i++) {
-        unsigned long size_of_thread = base_size;
+        unsigned long end = start + chunk_size - 1;
         if (i < remainder) {
-            size_of_thread++;
+            end++;
         }
-        std::cout << "Thread " << i + 1 << " processing " << size_of_thread << " bytes...\n";
+        std::cout << "Thread " << i + 1 << " processing " << start << " to " << end << " bytes...\n";
+        chunks[i] = std::make_pair(start, end);
+        start = end + 1;
     }
+
+    if (!chunks.empty()) {
+        chunks.back().second = file_size - 1;
+    }
+
+    return chunks;
 
 }
 
@@ -94,4 +110,40 @@ void Downloader::change_output_format() {
         this->output_file += new_extension;
     }
     std::cout << "New file output file name: " << this->output_file << std::endl;
+}
+
+void Downloader::download_chunk(unsigned long start, unsigned long end, int thread_id) {
+    CURL* curl = curl_easy_init(); // declares a curl object type that will do the work for us
+
+    if (!curl) {
+        std::cerr << "Thread " << thread_id << " failed to initialize cURL object" << std::endl;
+        return;
+    }
+
+    // Create temporatu file to store data in
+    std::string chunk_file = output_file + "_chunk_" + std::to_string(thread_id) + ".tmp";
+    FILE* file = fopen(chunk_file.c_str(), "wb"); // open chunk file that we created with write permissions
+
+    if (!file) {
+        std::cerr << "Thread " << thread_id <<  "failed to open file " << chunk_file << std::endl;
+        curl_easy_cleanup(curl);
+        return;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+    std::string range = std::to_string(start) + "-" + std::to_string(end);
+    curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
+
+    CURLcode res = curl_easy_perform(curl);
+    fclose(file);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) {
+        std::cerr << "Thread " << thread_id << " failed to download chunk: " << curl_easy_strerror(res) << std::endl;
+    }
+    else {
+        std::cout << "Thread " << thread_id << " downloaded bytes " << start << " to " << end << std::endl;
+    }
 }
