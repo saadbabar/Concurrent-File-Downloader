@@ -56,14 +56,19 @@ int main(int argc, char *argv[]) {
     output_file = argv[optind + 1];
 
     printf("URL: %s\n", url);
-    change_output_format(url, output_file);
+    // change_output_format(url, output_file);
     printf("Output File: %s\n", output_file.c_str());
     printf("Number of Threads: %d\n", num_threads);
 
-    unsigned long NUM_BYTES = get_file_size(url);
+    // unsigned long NUM_BYTES = get_file_size(url);
 
-    concurrent_download(url, num_threads);
-    divide_bytes_by_thread(NUM_BYTES, num_threads);
+    // concurrent_download(url, num_threads);
+    // divide_bytes_by_thread(NUM_BYTES, num_threads);
+
+    Downloader downloader(url, output_file, num_threads);
+    downloader.change_output_format();
+    downloader.concurrent_download();
+    downloader.divide_bytes_by_thread();
 
     return 0;
 

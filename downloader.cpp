@@ -2,7 +2,13 @@
 #include <curl/curl.h>
 #include <iostream>
 
-unsigned long get_file_size(const std::string& url) {
+
+Downloader::Downloader(const std::string& url, std::string& output_file, unsigned int num_threads)
+    : url(url), output_file(output_file), num_threads(num_threads) {
+        std::cout << "Downloading " << url << " into " << output_file << " with " << num_threads << " threads..." << std::endl;
+    };
+
+unsigned long Downloader::get_file_size() {
     // Use curl to get HTTP header which has content-length
     // create a curl session
     CURL *curl = curl_easy_init();
@@ -12,7 +18,7 @@ unsigned long get_file_size(const std::string& url) {
         return 1;
     }
 
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, this->url.c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_NOBODY, 1L); // Prevent downloading file contents
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L); // Return error for 4xx/5xx responses
@@ -30,22 +36,23 @@ unsigned long get_file_size(const std::string& url) {
     return -1;
 }
 
-void concurrent_download(const std::string &url, unsigned int num_threads) {
+void Downloader::concurrent_download() {
     // passing in &url because we want it to modify the original
-    long file_size = get_file_size(url);
+    unsigned long file_size = get_file_size();
 
     if (file_size <= 0) {
         std::cerr << "Failed to determine File Size of Download" << std::endl;
         return;
     }
 
-    std::cout << "Downloading " << file_size << " bytes using " << num_threads << " threads..." << std::endl;
+    std::cout << "Downloading " << file_size << " bytes using " << this->num_threads << " threads..." << std::endl;
 }
 
-void divide_bytes_by_thread(const unsigned long file_size, unsigned int num_threads) {
+void Downloader::divide_bytes_by_thread() {
     // divide which thread gets how many bytes
-    unsigned long base_size = file_size/num_threads;
-    unsigned long remainder = file_size % num_threads;
+    const unsigned long file_size = get_file_size();
+    unsigned long base_size = file_size/this->num_threads;
+    unsigned long remainder = file_size % this->num_threads;
 
     for (unsigned int i = 0; i < num_threads; i++) {
         unsigned long size_of_thread = base_size;
@@ -57,17 +64,17 @@ void divide_bytes_by_thread(const unsigned long file_size, unsigned int num_thre
 
 }
 
-void change_output_format(const std::string &url, std::string &output_file) {
+void Downloader::change_output_format() {
     // change file format to the one in the url
     // CHANGES ORIGINAL URL
     // output -> output.pdf or output.html -> output.txt depending on ending of url
     std::vector<char> url_file_format;
 
-    for (int i = url.length() - 1; i >= 0; --i) {
-        if (url[i]  == '.') {
+    for (int i = this->url.length() - 1; i >= 0; --i) {
+        if (this->url[i]  == '.') {
             break;
         }
-        url_file_format.push_back(url[i]);
+        url_file_format.push_back(this->url[i]);
     }
     std::reverse(url_file_format.begin(), url_file_format.end());
 
@@ -78,13 +85,13 @@ void change_output_format(const std::string &url, std::string &output_file) {
     }
     std::cout << "New file format: " << new_extension << std::endl;
 
-    size_t dot_index = output_file.rfind('.');
+    size_t dot_index = this->output_file.rfind('.');
 
     if (dot_index != std::string::npos) {
-        output_file.replace(dot_index, std::string::npos, new_extension);
+        this->output_file.replace(dot_index, std::string::npos, new_extension);
     }
     else {
-        output_file += new_extension;
+        this->output_file += new_extension;
     }
-
+    std::cout << "New file output file name: " << this->output_file << std::endl;
 }
