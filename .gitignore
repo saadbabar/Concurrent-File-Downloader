@@ -1,0 +1,13 @@
+# Ignore Executables
+*.exe
+*.out
+*.o
+*.a
+
+# Ignore Debug files
+*.dSYM
+
+# Ignore VScode files
+*.vscode
+
+
