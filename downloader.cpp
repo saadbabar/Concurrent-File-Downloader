@@ -52,7 +52,7 @@ void divide_bytes_by_thread(const unsigned long file_size, unsigned int num_thre
         if (i < remainder) {
             size_of_thread++;
         }
-        std::cout << "Thread " << i + 1 << " processing " << base_size << " bytes...\n";
+        std::cout << "Thread " << i + 1 << " processing " << size_of_thread << " bytes...\n";
     }
 
 }
