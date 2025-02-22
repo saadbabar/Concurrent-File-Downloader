@@ -26,6 +26,7 @@ class Downloader {
         void download_chunk(unsigned long start, unsigned long end, int thread_id);
         void combine_chunks();
         void delete_directory(std::string& dir_name);
+        std::string get_content_type();
 
     public:
         Downloader(const std::string &url, std::string &output_file, const unsigned int num_threads);

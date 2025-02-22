@@ -46,6 +46,44 @@ unsigned long Downloader::get_file_size() {
     return -1;
 }
 
+std::string Downloader::get_content_type()
+{
+    CURL *curl = curl_easy_init();
+    if (!curl)
+    {
+        std::cerr << "curl failed to initialize\n";
+        return "";
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, this->url.c_str());
+    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L); // HEAD request (no body)
+
+    CURLcode res = curl_easy_perform(curl);
+    std::string content_type_str;
+
+    if (res == CURLE_OK)
+    {
+        char *content_type = nullptr;
+        curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type);
+        if (content_type)
+        {
+            content_type_str = std::string(content_type);
+            size_t slash_pos = content_type_str.find('/');
+            if (slash_pos != std::string::npos) {
+                content_type_str = content_type_str.substr(slash_pos + 1); // Get substring after '/'
+            }
+            std::cout << "NEW CONTENT TYPE: " << content_type_str << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "curl request failed: " << curl_easy_strerror(res) << "\n";
+    }
+
+    curl_easy_cleanup(curl);
+    return content_type_str;
+}
+
 void Downloader::concurrent_download() {
     // passing in &url because we want it to modify the original
     unsigned long file_size = get_file_size();
@@ -116,17 +154,9 @@ void Downloader::change_output_format() {
     // change file format to the one in the url
     // CHANGES ORIGINAL URL
     // output -> output.pdf or output.html -> output.txt depending on ending of url
-    std::vector<char> url_file_format;
-
-    for (int i = this->url.length() - 1; i >= 0; --i) {
-        if (this->url[i]  == '.') {
-            break;
-        }
-        url_file_format.push_back(this->url[i]);
-    }
-    std::reverse(url_file_format.begin(), url_file_format.end());
 
     std::string new_extension = ".";
+    std::string url_file_format = get_content_type();
     
     for (int i = 0; i < url_file_format.size(); i++) {
         new_extension += url_file_format[i];
